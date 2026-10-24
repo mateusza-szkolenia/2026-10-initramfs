@@ -1,0 +1,103 @@
+#!/bin/sh
+
+export HOME=/root
+
+# shellcheck source=/dev/null
+. /lib/init_functions
+
+section_sep "Installing busybox symlinks"
+/bin/busybox --install -s /bin
+
+section_sep "Creating devices"
+mkdir -p /dev
+create_devices
+
+section_sep "Mouting /proc"
+mkdir -p /proc
+mount -t proc proc /proc
+
+if kernel_param_eq break top
+then
+  section_sep "Breaking at break=top"
+  /bin/sh
+fi
+
+if [ -e /rootfs.squashfs ]
+then
+  section_sep "Mounting squashfs rootfs"
+  mkdir -p /rootfs-ro
+  mount -t squashfs -o loop,ro /rootfs.squashfs /rootfs-ro
+
+  if kernel_param_eq break squash
+  then
+    section_sep "Breaking at break=squash"
+    /bin/sh
+  fi
+
+  section_sep "Mounting tmpfs overlay on /newroot"
+  mkdir -p /overlay /newroot
+  memsize="$(sed -ne '/^MemTotal/s/^.*: *\(.*\) kB$/\1/p' /proc/meminfo)"
+  mount -t tmpfs -o "size=${memsize}k,mode=0755" tmpfs /overlay
+  mkdir -p /overlay/upper /overlay/work
+  mount -t overlay overlay \
+    -o lowerdir=/rootfs-ro,upperdir=/overlay/upper,workdir=/overlay/work \
+    /newroot
+
+elif [ -e /rootfs.tar ]
+then
+  if kernel_param_eq break tar
+  then
+    section_sep "Breaking at break=tar"
+    /bin/sh
+  fi
+
+  section_sep "Mounting tmpfs on /newroot"
+  mkdir -p /newroot
+  memsize="$(sed -ne '/^MemTotal/s/^.*: *\(.*\) kB$/\1/p' /proc/meminfo)"
+  mount -t tmpfs -o "size=${memsize}k,mode=0755" tmpfs /newroot
+
+  section_sep "Unpacking rootfs"
+  tar -C /newroot -x --strip-components=1 < /rootfs.tar
+
+  section_sep "Removing rootfs.tar"
+  rm /rootfs.tar
+
+else
+  echo "No rootfs bundle found. Dropping to shell."
+  while true
+  do
+    sh
+    section_sep "Shell exited, spawning new one"
+  done
+fi
+
+cp /bin/busybox /newroot/bin/busybox.static
+
+if kernel_param_eq break bottom
+then
+  section_sep "Breaking at break=bottom"
+  /bin/sh
+fi
+
+section_sep "Unmouting /proc"
+umount /proc
+
+if [ -e /newroot/etc/lsb-release ]
+then
+    # shellcheck source=/dev/null
+    . /newroot/etc/lsb-release
+    echo "Distro: $DISTRIB_DESCRIPTION"
+fi
+
+section_sep "Jumping into new init"
+if [ -x /bin/run-init ] && [ -x /newroot/sbin/init ]
+then
+    exec /bin/run-init /newroot /sbin/init "$@"
+fi
+
+section_sep "run-init failed"
+while true
+do
+    sh
+    section_sep "Shell exited, spawning new one"
+done

@@ -1,0 +1,3 @@
+# NTP server used by busybox-ntpd.service (client-only sync, no server mode).
+# Uncomment to override the default (pool.ntp.org).
+NTP_SERVER=pool.ntp.org

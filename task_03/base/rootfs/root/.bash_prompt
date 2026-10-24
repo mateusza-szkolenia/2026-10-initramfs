@@ -1,0 +1,108 @@
+PROMPT_COMMAND=__prompt_command
+
+__append_prompt_module () {
+    local name="$1"
+    local value="$2"
+    local cbra='\[\e['"$3"'m\]'
+    local clab='\[\e['"$4"'m\]'
+    local cval='\[\e['"$5"'m\]'
+    local reset='\[\e[m\]'
+
+    PS1+="${cbra}[${reset}"
+    PS1+="${clab}${name}:${reset} "
+    PS1+="${cval}${value}${reset}"
+    PS1+="${cbra}]${reset} "
+}
+
+__exitcodes_append_prompt () {
+    local ret="$1"
+    local cbra="1;38;5;102"
+    local clab="1;38;5;145"
+    local cexval="1;38;5;205"
+    local cpival="1;38;5;204"
+
+    (( ret != 0 )) && __append_prompt_module "exit" "$ret" "$cbra" "$clab" "$cexval"
+    shift
+
+    [[ "$#" -eq 0 ]] && return
+    [[ "$#" -eq 1 ]] && [[ "$1" -eq "$ret" ]] && return
+    __append_prompt_module "pipes" "${*}" "$cbra" "$clab" "$cpival"
+}
+
+__jobs_append_prompt () {
+    local children
+    [[ -e "/proc/$$/task/$$/children" ]] || return
+    readarray -t -d " " children < "/proc/$$/task/$$/children"
+    for child in "${children[@]}"
+    do
+        __child_append_prompt "$child"
+    done
+}
+
+__child_append_prompt () {
+    local pid="$1"
+    local name
+    local state
+    local k v
+
+    while read -r k v
+    do
+        case "$k" in
+            "Name:") name="$v" ;;
+            "State:") state="${v:0:1}" ;;
+        esac
+    done < "/proc/$pid/status"
+
+    # shellcheck disable=SC2034
+    local c_R="1;38;5;119;48;5;22"
+    # shellcheck disable=SC2034
+    local c_S="1;38;5;222;48;5;202"
+    # shellcheck disable=SC2034
+    local c_T="1;38;5;231;48;5;160"
+    local reset='\[\e[m\]'
+    local c_current
+
+    declare -n c_current
+    c_current="c_$state"
+
+    local color0='\[\e['"${c_current}"'m\]'
+
+    PS1+="${color0} $pid $name ${reset} "
+}
+
+__append_std_prompt () {
+    local c1="1;38;5;44"
+    local c2="1;38;5;231"
+    local c3="1;38;5;0;48;5;172"
+    local c4="1;38;5;30"
+    local reset='\[\e[m\]'
+
+    local cuser='\[\e['"$c1"'m\]'
+    local cats='\[\e['"$c2"'m\]'
+    local chost='\[\e['"$c3"'m\]'
+    local cpath='\[\e['"$c4"'m\]'
+
+    PS1+="${cuser}\u${reset}"
+    PS1+="${cats}@${reset}"
+    PS1+="${chost}\h${reset}"
+    PS1+="${cats}:${reset}"
+    PS1+="${cpath}\w${reset}\n\\"'$ '
+}
+
+__shell_level_append_prompt () {
+    (( SHLVL > 1 )) || return
+    local cbra="1;38;5;34"
+    local clab="1;38;5;22"
+    local cval="1;38;5;71"
+    __append_prompt_module "SHLVL" "$SHLVL" "$cbra" "$clab" "$cval"
+}
+
+__prompt_command () {
+    local ret="$?" pipes=("${PIPESTATUS[@]}")
+    local children
+    PS1=""
+    __exitcodes_append_prompt "$ret" "${pipes[@]}"
+    __shell_level_append_prompt
+    __jobs_append_prompt
+    __append_std_prompt
+}

@@ -1,0 +1,4 @@
+disable x11-common.service
+disable cryptdisks.service
+disable cryptdisks-early.service
+disable hwclock.service

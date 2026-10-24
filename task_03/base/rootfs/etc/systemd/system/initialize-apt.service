@@ -1,0 +1,11 @@
+[Unit]
+Description=Initialize APT (fetch lists)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/apt-get update --yes --quiet
+
+[Install]
+WantedBy=multi-user.target

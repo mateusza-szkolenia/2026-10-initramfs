@@ -1,0 +1,11 @@
+[Unit]
+Description=Initialize etckeeper repository
+After=local-fs.target
+ConditionPathIsDirectory=!/etc/.git
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/libexec/initialize-etckeeper.sh
+
+[Install]
+WantedBy=multi-user.target
