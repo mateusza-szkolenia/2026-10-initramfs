@@ -34,8 +34,6 @@ then
     /bin/sh
   fi
 
-  section_sep "Mounting tmpfs overlay on /newroot"
-  mkdir -p /overlay /newroot
   memsize="$(sed -ne '/^MemTotal/s/^.*: *\(.*\) kB$/\1/p' /proc/meminfo)"
   mount -t tmpfs -o "size=${memsize}k,mode=0755" tmpfs /overlay
   mkdir -p /overlay/upper /overlay/work
