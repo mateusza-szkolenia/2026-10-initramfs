@@ -39,9 +39,6 @@ esac
 cp ../kernel-"${RELEASE}" ./boot
 cp "../initrd-${RELEASE}.$ext" ./boot
 
-print_action "Writing instance config placeholder (outridxx.xxnf)"
-python3 ../../scripts/gen-iso-placeholder.py > outridxx.xxnf
-
 print_action "Creating isolinux.cfg"
 cat > isolinux/isolinux.cfg <<EOF
 UI vesamenu.c32
@@ -87,19 +84,6 @@ xorriso -as mkisofs \
 
 print_action "Exporting to dist/"
 cp "$NAME-$RELEASE.iso" ../dist
-
-print_action "Exporting ISO customizer"
-CUSTOMIZER_DIR="../dist/iso-customizer-$RELEASE"
-mkdir -p "$CUSTOMIZER_DIR"
-cp -r ../base/iso-customizer/. "$CUSTOMIZER_DIR/"
-cp ../docs/logo-mini.png "$CUSTOMIZER_DIR/logo.png"
-cat > "$CUSTOMIZER_DIR/manifest.json" <<EOF
-{
-  "iso": "$NAME-$RELEASE.iso",
-  "release": "$RELEASE",
-  "size": $(stat -c%s "$NAME-$RELEASE.iso")
-}
-EOF
 
 popd # build
 popd # project
