@@ -28,14 +28,14 @@ scripts/build-rootfs.sh
 print_section "Initramfs"
 scripts/build-initramfs.sh
 
-#print_section "Ukify (EFI)"
-#scripts/build-efi.sh
+print_section "Ukify (EFI)"
+scripts/build-efi.sh
 
-#print_section "GPT Image"
-#scripts/build-img.sh
+print_section "GPT Image"
+scripts/build-img.sh
 
-#print_section "ISO Image"
-#scripts/build-iso.sh
+print_section "ISO Image"
+scripts/build-iso.sh
 
 #print_section "Tarball"
 #scripts/build-tarball.sh
