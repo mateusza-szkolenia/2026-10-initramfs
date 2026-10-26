@@ -16,6 +16,12 @@ pushd build
 
 ROOTFS="rootfs-$RELEASE"
 
+if [ -e "$ROOTFS/etc/passwd" ]
+then
+    print_action "Reusing rootfs"
+    exit 0
+fi
+
 rm -rf "$ROOTFS"
 
 join_by() { local IFS="$1"; shift; echo "$*"; }
@@ -132,8 +138,8 @@ popd # rootfs ($ROOTFS)
 print_action "Creating tar bundle"
 tar --transform 's_^'"$ROOTFS"'_rootfs_' -c "$ROOTFS" > "$ROOTFS".tar
 
-# print_action "Creating squashfs image"
-# mksquashfs "$ROOTFS" "$ROOTFS.squashfs" -noappend -comp zstd
+print_action "Creating squashfs image"
+mksquashfs "$ROOTFS" "$ROOTFS.squashfs" -noappend -comp zstd
 
 popd # build
 popd # project
